@@ -8,7 +8,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+// GET jadwal by ID
+export async function GET(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = token && verifyToken(token)
@@ -18,11 +22,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     const { data, error } = await supabase
       .from("jadwal_monev")
-      .select(`
-        *,
-        dosen_id:users (nama)
-      `)
-      .eq("id", params.id)
+      .select(`*, dosen_id:users (nama)`)
+      .eq("id", context.params.id)
       .single()
 
     if (error?.code === "PGRST116") {
@@ -38,7 +39,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+// UPDATE jadwal
+export async function PUT(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = token && verifyToken(token)
@@ -54,9 +59,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         tanggal,
         tempat,
         waktu,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", context.params.id)
       .eq("dosen_id", user.id)
       .select("*")
       .single()
@@ -74,7 +79,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+// DELETE jadwal
+export async function DELETE(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = token && verifyToken(token)
@@ -82,10 +91,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("jadwal_monev")
       .delete()
-      .eq("id", params.id)
+      .eq("id", context.params.id)
       .eq("dosen_id", user.id)
       .select("id")
       .single()

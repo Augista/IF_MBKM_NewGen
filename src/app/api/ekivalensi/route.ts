@@ -10,36 +10,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    let ekivalensi
+    let ekivalensi: any[] = []
+
     try {
-      if (db) {
-        if (userRole === "mahasiswa") {
-          ekivalensi = await db.sql`
-            SELECT 
-              e.*,
-              m.nama as mbkm_nama
-            FROM ekivalensi e
-            LEFT JOIN mbkm m ON e.mbkm_id = m.id
-            WHERE m.user_id = ${userId}
-            ORDER BY e.created_at DESC
-          `
-        } else {
-          ekivalensi = await db.sql`
-            SELECT 
-              e.*,
-              m.nama as mbkm_nama,
-              u.nama as mahasiswa_nama
-            FROM ekivalensi e
-            LEFT JOIN mbkm m ON e.mbkm_id = m.id
-            LEFT JOIN users u ON m.user_id = u.id
-            ORDER BY e.created_at DESC
-          `
-        }
+      if (userRole === "mahasiswa") {
+        const { rows } = await db.query(
+          `SELECT 
+             e.*,
+             m.nama as mbkm_nama
+           FROM ekivalensi e
+           LEFT JOIN mbkm m ON e.mbkm_id = m.id
+           WHERE m.user_id = $1
+           ORDER BY e.created_at DESC`,
+          [userId]
+        )
+        ekivalensi = rows
       } else {
-        ekivalensi = []
+        const { rows } = await db.query(
+          `SELECT 
+             e.*,
+             m.nama as mbkm_nama,
+             u.nama as mahasiswa_nama
+           FROM ekivalensi e
+           LEFT JOIN mbkm m ON e.mbkm_id = m.id
+           LEFT JOIN users u ON m.user_id = u.id
+           ORDER BY e.created_at DESC`
+        )
+        ekivalensi = rows
       }
     } catch (dbError) {
-      console.log("Database error, using fallback data")
+      console.error("Database error:", dbError)
       ekivalensi = []
     }
 
@@ -76,48 +76,38 @@ export async function POST(request: NextRequest) {
       catatan,
     } = await request.json()
 
-    let ekivalensi
     try {
-      if (db) {
-        ekivalensi = await db.sql`
-          INSERT INTO ekivalensi (
-            mbkm_id, kode, mata_kuliah, semester, tahun_akademik,
-            prodi_penyelenggara, sks, kelas, departemen, tipe,
-            persentase, nilai_huruf, nilai_angka, catatan
-          )
-          VALUES (
-            ${mbkmId}, ${kode}, ${mataKuliah}, ${semester}, ${tahunAkademik},
-            ${prodiPenyelenggara}, ${sks}, ${kelas}, ${departemen}, ${tipe},
-            ${persentase}, ${nilaiHuruf}, ${nilaiAngka}, ${catatan}
-          )
-          RETURNING *
-        `
-        ekivalensi = ekivalensi[0]
-      } else {
-        ekivalensi = {
-          id: Date.now().toString(),
-          mbkm_id: mbkmId,  
+      const { rows } = await db.query(
+        `INSERT INTO ekivalensi (
+          mbkm_id, kode, mata_kuliah, semester, tahun_akademik,
+          prodi_penyelenggara, sks, kelas, departemen, tipe,
+          persentase, nilai_huruf, nilai_angka, catatan
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+        RETURNING *`,
+        [
+          mbkmId,
           kode,
-          mata_kuliah: mataKuliah,
+          mataKuliah,
           semester,
-          tahun_akademik: tahunAkademik,
-          prodi_penyelenggara: prodiPenyelenggara,
+          tahunAkademik,
+          prodiPenyelenggara,
           sks,
           kelas,
           departemen,
           tipe,
           persentase,
-          nilai_huruf: nilaiHuruf,
-          nilai_angka: nilaiAngka,
+          nilaiHuruf,
+          nilaiAngka,
           catatan,
-        }
-      }
+        ]
+      )
+
+      return NextResponse.json({ data: rows[0] })
     } catch (dbError) {
       console.error("Database insert error:", dbError)
       return NextResponse.json({ error: "Failed to save ekivalensi" }, { status: 500 })
     }
-
-    return NextResponse.json({ data: ekivalensi })
   } catch (error) {
     console.error("Create ekivalensi error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
