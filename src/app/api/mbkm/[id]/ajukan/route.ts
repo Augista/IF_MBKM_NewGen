@@ -3,7 +3,10 @@ import { db } from "@/lib/db"
 import { cookies } from "next/headers"
 import { verifyToken } from "@/lib/auth"
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = verifyToken(token ?? "")
@@ -12,7 +15,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const mbkmId = params.id
+    const { id: mbkmId } = params
 
     // Validasi apakah MBKM milik user ini
     const { rows: mbkmRows } = await db.query(
@@ -21,7 +24,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     )
 
     if (mbkmRows.length === 0) {
-      return NextResponse.json({ error: "MBKM tidak ditemukan atau tidak berhak" }, { status: 404 })
+      return NextResponse.json(
+        { error: "MBKM tidak ditemukan atau tidak berhak" },
+        { status: 404 }
+      )
     }
 
     // Update status menjadi "menunggu"
@@ -33,6 +39,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ message: "MBKM berhasil diajukan ke pemonev" })
   } catch (error) {
     console.error("❌ POST /mbkm/[id]/ajukan error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
   }
 }

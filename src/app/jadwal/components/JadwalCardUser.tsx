@@ -5,9 +5,13 @@ import { DataTable } from "@/components/tables/DataTable"
 import TableCard from "@/components/tables/TableCard"
 import { jadwalUserColumns } from "@/components/tables/columns/JadwalColumn"
 import { BookModal } from "./BookModal"
-import { useParams} from "next/navigation"
+import { useParams } from "next/navigation"
 
-const JadwalCardUser = ({ className = "" }) => {
+interface JadwalCardUserProps {
+  className?: string
+}
+
+const JadwalCardUser: React.FC<JadwalCardUserProps> = ({ className = "" }) => {
   const { data = [], isLoading } = useGetJadwalQuery()
 
   const [selected, setSelected] = useState<string>("")
@@ -15,7 +19,7 @@ const JadwalCardUser = ({ className = "" }) => {
   const [open, setOpen] = useState(false)
 
   const params = useParams()
-  const mbkmId = params?.id as string
+  const mbkmId = typeof params?.id === "string" ? params.id : ""
 
   return (
     <>
@@ -40,7 +44,7 @@ const JadwalCardUser = ({ className = "" }) => {
         onClose={() => setOpen(false)}
         jadwalId={selected}
         waktuList={waktuList}
-        mbkmId={mbkmId} 
+        mbkmId={mbkmId}
       />
     </>
   )

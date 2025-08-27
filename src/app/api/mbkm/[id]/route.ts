@@ -3,7 +3,10 @@ import { db } from "@/lib/db"
 import { cookies } from "next/headers"
 import { verifyToken } from "@/lib/auth"
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest, 
+  context: { params: { id: string } }
+) {
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = verifyToken(token ?? "")
@@ -12,7 +15,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Unauthorized - Dosen only" }, { status: 403 })
     }
 
-    const { id } = params
+       const { id } = context.params
     const { status } = await request.json()
 
     if (!["disetujui", "ditolak", "menunggu"].includes(status)) {

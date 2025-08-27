@@ -2,7 +2,11 @@ import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { hashPassword } from "@/lib/auth"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+// GET User by ID
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const userRole = request.headers.get("x-user-role")
 
@@ -10,11 +14,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { id } = params
     const { rows } = await db.query(
-      `SELECT id, nama, email, nrp, role, created_at
+      `SELECT id, nama, email, nrp, role, created_at, updated_at
        FROM users 
        WHERE id = $1`,
-      [params.id]
+      [id]
     )
 
     if (rows.length === 0) {
@@ -23,12 +28,16 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     return NextResponse.json({ data: rows[0] })
   } catch (error) {
-    console.error("Get user by ID error:", error)
+    console.error("❌ Get user by ID error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+// UPDATE User
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const userRole = request.headers.get("x-user-role")
 
@@ -36,7 +45,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { nama, email, nrp, role, password } = await request.json()
+    const { id } = params
+    const body = await request.json().catch(() => ({}))
+
+    const { nama, email, nrp, role, password } = body
 
     let query: string
     let values: any[]
@@ -53,9 +65,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           password_hash = $5,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = $6
-        RETURNING id, nama, email, nrp, role, created_at
+        RETURNING id, nama, email, nrp, role, created_at, updated_at
       `
-      values = [nama, email, nrp, role, passwordHash, params.id]
+      values = [nama, email, nrp, role, passwordHash, id]
     } else {
       query = `
         UPDATE users 
@@ -66,9 +78,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           role = $4,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = $5
-        RETURNING id, nama, email, nrp, role, created_at
+        RETURNING id, nama, email, nrp, role, created_at, updated_at
       `
-      values = [nama, email, nrp, role, params.id]
+      values = [nama, email, nrp, role, id]
     }
 
     const { rows } = await db.query(query, values)
@@ -79,12 +91,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     return NextResponse.json({ data: rows[0] })
   } catch (error) {
-    console.error("Update user error:", error)
+    console.error("❌ Update user error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+//DELETE User
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const userRole = request.headers.get("x-user-role")
 
@@ -92,11 +108,12 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { id } = params
     const { rows } = await db.query(
       `DELETE FROM users 
        WHERE id = $1
        RETURNING id`,
-      [params.id]
+      [id]
     )
 
     if (rows.length === 0) {
@@ -105,7 +122,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     return NextResponse.json({ message: "User deleted successfully" })
   } catch (error) {
-    console.error("Delete user error:", error)
+    console.error("❌ Delete user error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

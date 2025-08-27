@@ -10,10 +10,10 @@ const supabase = createClient(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: { id: string } }
 ) {
-  const { id } = await params;
-  const jadwalId = id;
+  const { id } = context.params
+  const jadwalId = id
 
   try {
     const token = (await cookies()).get("authToken")?.value;

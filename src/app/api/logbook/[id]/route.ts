@@ -3,14 +3,16 @@ import { db } from "@/lib/db"
 import { verifyToken } from "@/lib/auth"
 import { cookies } from "next/headers"
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: { id: string } }) {
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = verifyToken(token ?? "")
 
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
-    const { id } = params
+    const { id } = context.params
 
     const { rows } = await db.query(
       `SELECT * FROM logbook WHERE id = $1 AND user_id = $2`,
@@ -28,14 +30,16 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: { id: string } }) {
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = verifyToken(token ?? "")
 
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
-    const { id } = params
+    const { id } = context.params
 
     const {
       cpmkFileUrl,
@@ -82,14 +86,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = verifyToken(token ?? "")
 
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
-    const { id } = params
+    const { id } = context.params
 
     const { rowCount } = await db.query(
       `DELETE FROM logbook WHERE id = $1 AND user_id = $2`,
