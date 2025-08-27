@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { db } from "@/lib/db"
 import { hashPassword } from "@/lib/auth"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -10,17 +10,18 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const users = await sql`
-      SELECT id, nama, email, nrp, role, created_at
-      FROM users 
-      WHERE id = ${params.id}
-    `
+    const { rows } = await db.query(
+      `SELECT id, nama, email, nrp, role, created_at
+       FROM users 
+       WHERE id = $1`,
+      [params.id]
+    )
 
-    if (users.length === 0) {
+    if (rows.length === 0) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    return NextResponse.json({ data: users[0] })
+    return NextResponse.json({ data: rows[0] })
   } catch (error) {
     console.error("Get user by ID error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -37,41 +38,46 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     const { nama, email, nrp, role, password } = await request.json()
 
-    let updateQuery = sql`
-      UPDATE users 
-      SET 
-        nama = ${nama},
-        email = ${email},
-        nrp = ${nrp},
-        role = ${role},
-        updated_at = CURRENT_TIMESTAMP
-    `
+    let query: string
+    let values: any[]
 
     if (password) {
       const passwordHash = await hashPassword(password)
-      updateQuery = sql`
+      query = `
         UPDATE users 
         SET 
-          nama = ${nama},
-          email = ${email},
-          nrp = ${nrp},
-          role = ${role},
-          password_hash = ${passwordHash},
+          nama = $1,
+          email = $2,
+          nrp = $3,
+          role = $4,
+          password_hash = $5,
           updated_at = CURRENT_TIMESTAMP
+        WHERE id = $6
+        RETURNING id, nama, email, nrp, role, created_at
       `
+      values = [nama, email, nrp, role, passwordHash, params.id]
+    } else {
+      query = `
+        UPDATE users 
+        SET 
+          nama = $1,
+          email = $2,
+          nrp = $3,
+          role = $4,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $5
+        RETURNING id, nama, email, nrp, role, created_at
+      `
+      values = [nama, email, nrp, role, params.id]
     }
 
-    const users = await sql`
-      ${updateQuery}
-      WHERE id = ${params.id}
-      RETURNING id, nama, email, nrp, role, created_at
-    `
+    const { rows } = await db.query(query, values)
 
-    if (users.length === 0) {
+    if (rows.length === 0) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    return NextResponse.json({ data: users[0] })
+    return NextResponse.json({ data: rows[0] })
   } catch (error) {
     console.error("Update user error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -86,13 +92,14 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const users = await sql`
-      DELETE FROM users 
-      WHERE id = ${params.id}
-      RETURNING id
-    `
+    const { rows } = await db.query(
+      `DELETE FROM users 
+       WHERE id = $1
+       RETURNING id`,
+      [params.id]
+    )
 
-    if (users.length === 0) {
+    if (rows.length === 0) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 

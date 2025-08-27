@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { db } from "@/lib/db"
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,52 +10,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    let monevData
+    let query = `
+      SELECT 
+        m.*,
+        mb.nama as mahasiswa_nama,
+        mb.angkatan,
+        mb.tipe_mbkm,
+        u.nama as dosen_nama
+      FROM monev m
+      LEFT JOIN mbkm mb ON m.mbkm_id = mb.id
+      LEFT JOIN users u ON m.dosen_id = u.id
+    `
+    const params: any[] = []
 
     if (userRole === "dosen") {
-      monevData = await sql`
-        SELECT 
-          m.*,
-          mb.nama as mahasiswa_nama,
-          mb.angkatan,
-          mb.tipe_mbkm,
-          u.nama as dosen_nama
-        FROM monev m
-        LEFT JOIN mbkm mb ON m.mbkm_id = mb.id
-        LEFT JOIN users u ON m.dosen_id = u.id
-        WHERE m.dosen_id = ${userId}
-        ORDER BY m.created_at DESC
-      `
+      query += ` WHERE m.dosen_id = $1 ORDER BY m.created_at DESC`
+      params.push(userId)
     } else if (userRole === "mahasiswa") {
-      monevData = await sql`
-        SELECT 
-          m.*,
-          mb.nama as mahasiswa_nama,
-          mb.angkatan,
-          mb.tipe_mbkm,
-          u.nama as dosen_nama
-        FROM monev m
-        LEFT JOIN mbkm mb ON m.mbkm_id = mb.id
-        LEFT JOIN users u ON m.dosen_id = u.id
-        WHERE mb.user_id = ${userId}
-        ORDER BY m.created_at DESC
-      `
+      query += ` WHERE mb.user_id = $1 ORDER BY m.created_at DESC`
+      params.push(userId)
     } else {
-      monevData = await sql`
-        SELECT 
-          m.*,
-          mb.nama as mahasiswa_nama,
-          mb.angkatan,
-          mb.tipe_mbkm,
-          u.nama as dosen_nama
-        FROM monev m
-        LEFT JOIN mbkm mb ON m.mbkm_id = mb.id
-        LEFT JOIN users u ON m.dosen_id = u.id
-        ORDER BY m.created_at DESC
-      `
+      query += ` ORDER BY m.created_at DESC`
     }
 
-    return NextResponse.json({ data: monevData })
+    const { rows } = await db.query(query, params)
+
+    return NextResponse.json({ data: rows })
   } catch (error) {
     console.error("Get monev error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -73,13 +53,14 @@ export async function POST(request: NextRequest) {
 
     const { mbkmId, monevKe, status, catatan } = await request.json()
 
-    const monev = await sql`
-      INSERT INTO monev (mbkm_id, dosen_id, monev_ke, status, catatan)
-      VALUES (${mbkmId}, ${userId}, ${monevKe}, ${status}, ${catatan})
-      RETURNING *
-    `
+    const { rows } = await db.query(
+      `INSERT INTO monev (mbkm_id, dosen_id, monev_ke, status, catatan)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [mbkmId, userId, monevKe, status, catatan]
+    )
 
-    return NextResponse.json({ data: monev[0] })
+    return NextResponse.json({ data: rows[0] })
   } catch (error) {
     console.error("Create monev error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

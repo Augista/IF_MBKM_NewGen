@@ -5,6 +5,9 @@ import { db } from "@/lib/db"
 import { cookies } from "next/headers"
 import { User } from "@/types/user"
 
+export const runtime = "nodejs"
+
+
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
