@@ -8,33 +8,38 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function POST(
-  request: NextRequest,
-  context: { params: { id: string } }
-) {
+interface RouteContext {
+  params: {
+    id: string
+  }
+}
+
+export async function POST(request: NextRequest, context: RouteContext) {
   const { id } = context.params
   const jadwalId = id
 
   try {
-    const token = (await cookies()).get("authToken")?.value;
-    if (!token) return NextResponse.json({ error: "Unauthorized - No token" }, { status: 401 });
-
-    const user = verifyToken(token);
-    if (!user || user.role !== "mahasiswa") {
-      return NextResponse.json({ error: "Unauthorized - Not mahasiswa" }, { status: 401 });
+    const token = (await cookies()).get("authToken")?.value
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized - No token" }, { status: 401 })
     }
 
-    const { waktuDipilih, mbkmId } = await request.json();
+    const user = verifyToken(token)
+    if (!user || user.role !== "mahasiswa") {
+      return NextResponse.json({ error: "Unauthorized - Not mahasiswa" }, { status: 401 })
+    }
+
+    const { waktuDipilih, mbkmId } = await request.json()
 
     const { data: existing, error: existingError } = await supabase
       .from("booking_jadwal")
       .select("id")
       .eq("jadwal_id", jadwalId)
-      .eq("waktu_dipilih", waktuDipilih);
+      .eq("waktu_dipilih", waktuDipilih)
 
-    if (existingError) throw existingError;
+    if (existingError) throw existingError
     if (existing && existing.length > 0) {
-      return NextResponse.json({ error: "Time slot already booked" }, { status: 409 });
+      return NextResponse.json({ error: "Time slot already booked" }, { status: 409 })
     }
 
     const { data, error } = await supabase
@@ -44,16 +49,16 @@ export async function POST(
         mahasiswa_id: user.id,
         mbkm_id: mbkmId,
         waktu_dipilih: waktuDipilih,
-        status: "Booked"
+        status: "Booked",
       })
       .select("*")
-      .single();
+      .single()
 
-    if (error) throw error;
+    if (error) throw error
 
-    return NextResponse.json({ data });
+    return NextResponse.json({ data })
   } catch (error) {
-    console.error("Book jadwal error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Book jadwal error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
