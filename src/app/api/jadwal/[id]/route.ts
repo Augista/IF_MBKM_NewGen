@@ -8,10 +8,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function GET(
-  request: NextRequest,
-  context: { params: { id: string } }
-) {
+type Params = { params: { id: string } }
+
+// GET jadwal by id
+export async function GET(request: NextRequest, context: any) {
+  const { id } = (context as Params).params
+
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = token && verifyToken(token)
@@ -22,7 +24,7 @@ export async function GET(
     const { data, error } = await supabase
       .from("jadwal_monev")
       .select(`*, dosen_id:users (nama)`)
-      .eq("id", context.params.id)
+      .eq("id", id)
       .single()
 
     if (error?.code === "PGRST116") {
@@ -39,10 +41,9 @@ export async function GET(
 }
 
 // UPDATE jadwal
-export async function PUT(
-  request: NextRequest,
-  context: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, context: any) {
+  const { id } = (context as Params).params
+
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = token && verifyToken(token)
@@ -60,7 +61,7 @@ export async function PUT(
         waktu,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", context.params.id)
+      .eq("id", id)
       .eq("dosen_id", user.id)
       .select("*")
       .single()
@@ -79,10 +80,9 @@ export async function PUT(
 }
 
 // DELETE jadwal
-export async function DELETE(
-  request: NextRequest,
-  context: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, context: any) {
+  const { id } = (context as Params).params
+
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = token && verifyToken(token)
@@ -93,7 +93,7 @@ export async function DELETE(
     const { error } = await supabase
       .from("jadwal_monev")
       .delete()
-      .eq("id", context.params.id)
+      .eq("id", id)
       .eq("dosen_id", user.id)
       .select("id")
       .single()
