@@ -5,7 +5,7 @@ import { verifyToken } from "@/lib/auth"
 
 export async function PUT(
   request: NextRequest, 
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const token = (await cookies()).get("authToken")?.value
@@ -15,7 +15,7 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized - Dosen only" }, { status: 403 })
     }
 
-       const { id } = context.params
+       const { id } = params
     const { status } = await request.json()
 
     if (!["disetujui", "ditolak", "menunggu"].includes(status)) {

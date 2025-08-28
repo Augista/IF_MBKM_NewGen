@@ -3,7 +3,10 @@ import { db } from "@/lib/db"
 import { verifyToken } from "@/lib/auth"
 import { cookies } from "next/headers"
 
-export async function GET(request: NextRequest, context: { params: { id: string } }) {
+type Params = { params: { id: string } }
+
+// GET logbook by id
+export async function GET(request: NextRequest, context: any) {
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = verifyToken(token ?? "")
@@ -12,7 +15,7 @@ export async function GET(request: NextRequest, context: { params: { id: string 
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { id } = context.params
+    const { id } = (context as Params).params
 
     const { rows } = await db.query(
       `SELECT * FROM logbook WHERE id = $1 AND user_id = $2`,
@@ -30,7 +33,8 @@ export async function GET(request: NextRequest, context: { params: { id: string 
   }
 }
 
-export async function PUT(request: NextRequest, context: { params: { id: string } }) {
+// UPDATE logbook
+export async function PUT(request: NextRequest, context: any) {
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = verifyToken(token ?? "")
@@ -39,7 +43,7 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { id } = context.params
+    const { id } = (context as Params).params
 
     const {
       cpmkFileUrl,
@@ -86,7 +90,8 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
   }
 }
 
-export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
+// DELETE logbook
+export async function DELETE(request: NextRequest, context: any) {
   try {
     const token = (await cookies()).get("authToken")?.value
     const user = verifyToken(token ?? "")
@@ -95,7 +100,7 @@ export async function DELETE(request: NextRequest, context: { params: { id: stri
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { id } = context.params
+    const { id } = (context as Params).params
 
     const { rowCount } = await db.query(
       `DELETE FROM logbook WHERE id = $1 AND user_id = $2`,
