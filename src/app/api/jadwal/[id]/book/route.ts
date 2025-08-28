@@ -8,11 +8,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const jadwalId = params.id
+export async function POST(request: NextRequest, context: any) {
+  const { id } = context.params
+  const jadwalId = id
 
   try {
     const token = (await cookies()).get("authToken")?.value
